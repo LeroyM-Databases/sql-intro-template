@@ -1,0 +1,49 @@
+name: Test MySQL Queries
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_db
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+    - name: Checkout student code
+      uses: actions/checkout@v3
+
+    - name: Install MySQL Client
+      run: sudo apt-get install -y mysql-client
+
+    - name: Set up database schema
+      run: |
+        mysql -h 127.0.0.1 -u root -proot test_db < setup.sql
+
+    - name: Run correct solution query (hidden from students)
+      run: |
+        echo "🚀 Uitvoeren van de correcte oplossing:"
+        echo "${{ secrets.CORRECT_QUERY }}"
+        echo "${{ secrets.CORRECT_QUERY }}" | mysql -h 127.0.0.1 -u root -proot test_db --skip-column-names > correct_output.txt
+        echo "✅ Correcte oplossing uitgevoerd. Inhoud van correct_output.txt:"
+        cat correct_output.txt
+
+    - name: Run student query
+      run: |
+        mysql -h 127.0.0.1 -u root -proot test_db < student_submission.sql > student_output.txt
+
+    - name: Compare outputs (Ignore headers)
+      run: |
+        echo "📂 Debug: Inhoud van correct_output.txt:"
+        cat correct_output.txt || echo "⚠ correct_output.txt is leeg!"
+
+        echo "📂 Debug: Inhoud van student_output.txt:"
+        cat student_output.txt || echo "⚠ student_output.txt is leeg!"
+
+        diff -w correct_output.txt student_output.txt && echo "✅ Test geslaagd! De output is correct." || (echo "❌ Fout: De output komt niet overeen met de verwachte oplossing."; exit 1)
