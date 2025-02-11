@@ -1,0 +1,43 @@
+name: Test MySQL Queries
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_db
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+    - name: Checkout student code
+      uses: actions/checkout@v3
+
+    - name: Install MySQL Client
+      run: sudo apt-get install -y mysql-client
+
+    - name: Set up database schema
+      run: |
+        mysql -h 127.0.0.1 -u root -proot test_db < setup.sql
+
+    - name: Run student query
+      run: |
+        mysql -h 127.0.0.1 -u root -proot test_db < student_submission.sql > output.txt
+
+    - name: Check output
+      run: |
+        EXPECTED_OUTPUT="Alice 22\nCharlie 25\nEmma 21"
+        ACTUAL_OUTPUT=$(tail -n +2 output.txt | awk '{print $1, $2}')
+        if [ "$ACTUAL_OUTPUT" != "$EXPECTED_OUTPUT" ]; then
+          echo "❌ Fout: Verwachte output:"
+          echo "$EXPECTED_OUTPUT"
+          echo "Maar kreeg:"
+          echo "$ACTUAL_OUTPUT"
+          exit 1
+        fi
