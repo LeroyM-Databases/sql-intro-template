@@ -32,12 +32,18 @@ jobs:
 
     - name: Check output
       run: |
-        EXPECTED_OUTPUT="Alice 22\nCharlie 25\nEmma 21"
+        EXPECTED_OUTPUT="Alice 22
+        Charlie 25
+        Emma 21"
+
         ACTUAL_OUTPUT=$(tail -n +2 output.txt | awk '{print $1, $2}')
+
         if [ "$ACTUAL_OUTPUT" != "$EXPECTED_OUTPUT" ]; then
           echo "❌ Fout: Verwachte output:"
           echo "$EXPECTED_OUTPUT"
           echo "Maar kreeg:"
           echo "$ACTUAL_OUTPUT"
           exit 1
+        else
+          echo "✅ Correct! De output is zoals verwacht."
         fi
